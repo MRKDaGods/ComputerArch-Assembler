@@ -312,7 +312,7 @@
             // 
             // cbStrict
             // 
-            cbStrict.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            cbStrict.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             cbStrict.Font = new Font("Segoe UI Semibold", 9F);
             cbStrict.Location = new Point(493, 633);
             cbStrict.Name = "cbStrict";

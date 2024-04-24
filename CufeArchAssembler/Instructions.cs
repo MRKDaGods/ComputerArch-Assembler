@@ -78,6 +78,7 @@
         public static InstructionDefinition LDD => new(InstructionOpCode.LDD, 0x2, InstructionOperand.Register, InstructionOperand.OffsetRegister);
         public static InstructionDefinition STD => new(InstructionOpCode.STD, 0x2, InstructionOperand.Register, InstructionOperand.OffsetRegister);
         public static InstructionDefinition PROTECT => new(InstructionOpCode.PROTECT, 0x0, InstructionOperand.Register);
+        public static InstructionDefinition FREE => new(InstructionOpCode.FREE, 0x0, InstructionOperand.Register);
         public static InstructionDefinition JZ => new(InstructionOpCode.JZ, 0x2, InstructionOperand.Register);
         public static InstructionDefinition JMP => new(InstructionOpCode.JMP, 0x2, InstructionOperand.Register);
         public static InstructionDefinition CALL => new(InstructionOpCode.CALL, 0x2, InstructionOperand.Register);
