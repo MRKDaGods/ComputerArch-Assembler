@@ -122,10 +122,10 @@ namespace MRK
 
                 foreach (string line in tbOutput.Lines)
                 {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (string.IsNullOrWhiteSpace(line) || !line.StartsWith("0x")) continue;
 
                     var hexStart = line.IndexOf("0x") + 2;
-                    var hexEnd = line.Substring(hexStart).IndexOf(' ') + hexStart;
+                    var hexEnd = line.Substring(hexStart).IndexOf('\t') + hexStart;
                     var hex = line.Substring(hexStart, hexEnd - hexStart);
 
                     len++;
@@ -212,11 +212,11 @@ namespace MRK
             Instance?.Log(LogLevel.Error, msg);
         }
 
-        private static (string, string) ConvertInstructionToString(uint instruction, int sz = 8)
+        private static (string, string) ConvertInstructionToString(uint instruction, int sz = 4)
         {
-            var hex = Convert.ToString(instruction, 16).PadLeft(sz, '0').ToUpper();
+            var hex = Convert.ToString(instruction, 16).PadLeft(sz * 2, '0').ToUpper();
             var bin = Convert.ToString(instruction, 2)
-                .PadLeft(sz * 4, '0').Reverse().ToArray();
+                .PadLeft(sz * 8, '0').Reverse().ToArray();
 
             var spacedBin = "";
             for (int i = 0; i < bin.Length; i++)
