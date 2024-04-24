@@ -125,7 +125,7 @@ namespace MRK
                 {
                     // assign reserved
                     // res=0 for 16bit, 1 for 32bit
-                    Reserved = (byte)(definition.Size == 8 ? 1 : 0)
+                    Reserved = (byte)(definition.Size == 4 ? 1 : 0)
                 };
 
                 // read operands

@@ -52,7 +52,7 @@
         public InstructionOperand[] Operands { get; init; } = operands;
         public int Size => Operands
             .Any(x => x == InstructionOperand.OffsetRegister || 
-                                    x == InstructionOperand.Immediate) ? 8 : 4;
+                                    x == InstructionOperand.Immediate) ? 4 : 2;
 
         // add all
         public static InstructionDefinition NOP => new(InstructionOpCode.NOP, 0x0);

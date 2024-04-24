@@ -175,7 +175,7 @@ namespace MRK
 
                     // tabs are broken?
                     tbOutput.AppendText($"{parser.InstructionLineMap[instruction].ToUpper()}\r\n" +
-                        $"0x{str.Item1}{new string('\t', instruction.Definition.Size == 4 ? 2 : 1)}{str.Item2}\r\n\r\n");
+                        $"0x{str.Item1}{new string('\t', instruction.Definition.Size == 2 ? 2 : 1)}{str.Item2}\r\n\r\n");
                 }
 
                 lStatus.BackColor = Color.Green;
