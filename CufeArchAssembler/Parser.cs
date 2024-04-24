@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Globalization;
 using static MRK.Main;
 
 namespace MRK
@@ -25,7 +26,8 @@ namespace MRK
         {
             get => _recordBuffer;
 
-            set {
+            set
+            {
                 _recordBuffer = value;
 
                 if (_recordBuffer)
@@ -46,7 +48,7 @@ namespace MRK
             var lines = _code.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
-                var line = lines[i];
+                var line = lines[i].Trim();
 
                 int commentStart = line.IndexOf('#');
                 if (commentStart != -1)
@@ -54,7 +56,13 @@ namespace MRK
                     line = line.Remove(commentStart);
                 }
 
-                lines[i] = line.Trim();
+                // check for .org
+                if (line.StartsWith(".org"))
+                {
+                    line = $"DIRECTIVE_ORG {line[4..]}";
+                }
+
+                lines[i] = line;
             }
 
             _code = string.Join('\n', lines);
@@ -81,8 +89,6 @@ namespace MRK
 
             while (!IsPosInvalid)
             {
-                // read instr
-
                 // start recording
                 RecordBuffer = true;
 
@@ -99,6 +105,7 @@ namespace MRK
 
                 if (instruction.Length == 0)
                 {
+                    SkipTill('\n');
                     continue;
                 }
 
@@ -115,7 +122,7 @@ namespace MRK
                     {
                         throw new ParserException(_line, _pos, $"Unknown instruction ({instruction})");
                     }
-                    
+
                     // skip to new line
                     SkipTill('\n');
                     continue;
@@ -186,7 +193,7 @@ namespace MRK
             switch (flag)
             {
                 case 0:
-                    instruction.Src1 = reg; 
+                    instruction.Src1 = reg;
                     break;
 
                 case 1:
@@ -194,6 +201,11 @@ namespace MRK
                     break;
 
                 case 2:
+                    instruction.Dst = reg;
+                    break;
+
+                case 3:
+                    instruction.Src1 = reg;
                     instruction.Dst = reg;
                     break;
             }
@@ -264,7 +276,7 @@ namespace MRK
         private string ReadText()
         {
             string buf = "";
-            for (char c = ReadProper(); char.IsLetter(c) && !IsPosInvalid; c = Read())
+            for (char c = ReadProper(); (char.IsLetter(c) || c == '_') && !IsPosInvalid; c = Read())
             {
                 buf += c;
             }
@@ -280,7 +292,7 @@ namespace MRK
             bool canReadNum = false;
 
             string buf = "";
-            for (char c = ReadProper(); !IsPosInvalid && ((canReadNum && char.IsDigit(c)) || char.IsLetter(c)); c = Read())
+            for (char c = ReadProper(); !IsPosInvalid && ((canReadNum && char.IsDigit(c)) || char.IsLetter(c) || c == '_'); c = Read())
             {
                 if (char.IsLetter(c))
                 {
@@ -302,7 +314,7 @@ namespace MRK
 
             bool prefix = true;
 
-            for (char c = ReadProper(); !IsPosInvalid && char.IsDigit(c) || (prefix && c == '-'); c = Read())
+            for (char c = ReadProper(); !IsPosInvalid && char.IsAsciiHexDigit(c) || (prefix && c == '-'); c = Read())
             {
                 // turn off prefix
                 prefix = false;
@@ -322,7 +334,7 @@ namespace MRK
             {
                 LogInfo("Reading operand register");
             }
-            
+
             //Rx
             var identifier = ReadIdentifier();
             LogInfo("Identifier=" + identifier);
@@ -345,7 +357,7 @@ namespace MRK
             var number = ReadNumber();
             LogInfo("Number=" + number);
 
-            if (!int.TryParse(number, out int res) || res < short.MinValue || res > ushort.MaxValue)
+            if (!int.TryParse(number, NumberStyles.HexNumber, null, out int res) || res < short.MinValue || res > ushort.MaxValue)
             {
                 throw new ParserException(_line, _pos, $"Invalid number ({number})");
             }
@@ -362,7 +374,7 @@ namespace MRK
             var number = ReadNumber();
             LogInfo("Number=" + number);
 
-            if (!short.TryParse(number, out short res))
+            if (!short.TryParse(number, NumberStyles.HexNumber, null, out short res))
             {
                 throw new ParserException(_line, _pos, $"Invalid short ({number})");
             }

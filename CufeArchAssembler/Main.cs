@@ -95,6 +95,8 @@ namespace MRK
 
         private string? _memoryPath;
 
+        private readonly List<Instruction> _assembledInstructions;
+
         private static Main? Instance { get; set; }
 
         public Main()
@@ -109,30 +111,45 @@ namespace MRK
             _synthesize = new Synthesize(this);
 
             _memoryPath = null;
+
+            _assembledInstructions = new();
         }
 
         private void OnGenerateClick(object? sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(tbOutput.Text)) return;
+            if (_assembledInstructions.Count == 0) return;
 
             if (new InputStringForm(_memoryPath, path => _memoryPath = path).ShowDialog() == DialogResult.OK)
             {
                 int len = 0;
                 string data = "";
 
-                foreach (string line in tbOutput.Lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line) || !line.StartsWith("0x")) continue;
+                // predicted instruction rel addr
+                ushort codePosition = 0;
 
-                    var hexStart = line.IndexOf("0x") + 2;
-                    var hexEnd = line.Substring(hexStart).IndexOf('\t') + hexStart;
-                    var hex = line.Substring(hexStart, hexEnd - hexStart);
+                foreach (var instruction in _assembledInstructions)
+                {
+                    var deltaAddr = instruction.RelativeAddress - codePosition;
+                    if (deltaAddr > 0)
+                    {
+                        while (deltaAddr-- > 0)
+                        {
+                            // add nops
+                            data += " 0000 ";
+                            len++;
+                        }
+                    }
+
+                    codePosition = (ushort)(instruction.RelativeAddress + instruction.Definition.Size / 2);
+
+                    var asm = instruction.Assembly;
+                    var hex = ConvertInstructionToString(asm, instruction.Definition.Size).Item1;
 
                     len++;
 
                     if (hex.Length > 4)
                     {
-                        hex = hex.Substring(4) + ' ' + hex.Substring(0, 4);
+                        hex = string.Concat(hex.AsSpan(4), " ", hex.AsSpan(0, 4)); // little endian
                         len++;
                     }
 
@@ -161,20 +178,42 @@ namespace MRK
                 // clear output
                 tbOutput.Clear();
 
+                _assembledInstructions.Clear();
+
                 // start!
                 parser.Parse();
 
-                LogInfo($"Done parsing, instruction count={parser.Instructions.Count}");
+                LogInfo($"Done parsing, instruction count={parser.Instructions.Count}\r\nAssembling...");
+
+                ushort codeStartPosition = 0;
 
                 foreach (var instruction in parser.Instructions)
                 {
+                    // is org?
+                    if (instruction.Definition.OpCode == InstructionOpCode.DIRECTIVE_ORG)
+                    {
+                        //tbOutput.AppendText($"=>> 0x{codeStartPosition:X2} > 0x{instruction.Immediate:X2}\r\n");
+                        codeStartPosition = instruction.Immediate;
+                        continue;
+                    }
+
+                    instruction.RelativeAddress = codeStartPosition; // to use later
+
+                    // increment codeStartPosition
+                    codeStartPosition += (ushort)(instruction.Definition.Size / 2);
+
                     // assemble
-                    uint asm = Instruction.Assemble(instruction);
+                    _assembledInstructions.Add(instruction);
+                }
 
-                    var str = ConvertInstructionToString(asm, instruction.Definition.Size);
+                // sort by relative address
+                _assembledInstructions.Sort((x, y) => x.RelativeAddress.CompareTo(y.RelativeAddress));
 
-                    // tabs are broken?
-                    tbOutput.AppendText($"{parser.InstructionLineMap[instruction].ToUpper()}\r\n" +
+                foreach (var instruction in _assembledInstructions)
+                {
+                    var str = ConvertInstructionToString(instruction.Assembly, instruction.Definition.Size);
+
+                    tbOutput.AppendText($"{instruction.RelativeAddress:X4}: {parser.InstructionLineMap[instruction].ToUpper()}\r\n" +
                         $"0x{str.Item1}{new string('\t', instruction.Definition.Size == 2 ? 2 : 1)}{str.Item2}\r\n\r\n");
                 }
 
